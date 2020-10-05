@@ -23,8 +23,8 @@ namespace FeatureNinjas.LogPack
         private readonly RequestDelegate _next;
 
         private readonly LogPackOptions _options;
-        
-        private string _requestBody;
+
+        private readonly Dictionary<string, string> _requestBody = new Dictionary<string, string>();
 
         private static List<string> _stoppedRequests = new List<string>();
 
@@ -56,7 +56,7 @@ namespace FeatureNinjas.LogPack
             var body = httpContext.Request.Body;
             var buffer = new byte[Convert.ToInt32(httpContext.Request.ContentLength)];
             await httpContext.Request.Body.ReadAsync(buffer, 0, buffer.Length);
-            _requestBody = Encoding.UTF8.GetString(buffer);
+            _requestBody.Add(httpContext.TraceIdentifier, Encoding.UTF8.GetString(buffer));
             body.Seek(0, SeekOrigin.Begin);
             httpContext.Request.Body = body;
         }
@@ -172,6 +172,7 @@ namespace FeatureNinjas.LogPack
                 finally
                 {
                     _stoppedRequests.Remove(context.TraceIdentifier);
+                    _requestBody.Remove(context.TraceIdentifier);
                     LogPackTracer.Tracer.Remove(context.TraceIdentifier);
                 }
             }
@@ -197,7 +198,7 @@ namespace FeatureNinjas.LogPack
             CreateFileForEnv(archive);
 
             // write the context
-            await CreateFileForHttpContext(archive, context);
+            await CreateFileForRequest(archive, context);
             
             // write dependencies
             CreateFileForDependencies(archive, context);
@@ -331,7 +332,7 @@ namespace FeatureNinjas.LogPack
             entryStream.Dispose();
         }
 
-        private async Task CreateFileForHttpContext(ZipArchive archive, HttpContext context)
+        private async Task CreateFileForRequest(ZipArchive archive, HttpContext context)
         {
             if (context == null)
                 return;
@@ -351,9 +352,9 @@ namespace FeatureNinjas.LogPack
             }
             
             // get the request body
-            if (_options.IncludeRequestPayload && context.Request.Body.CanRead)
+            if (_options.IncludeRequestPayload && context.Request.Body.CanRead && _requestBody.ContainsKey(context.TraceIdentifier))
             {
-                streamWriter.WriteLine(_requestBody);
+                streamWriter.WriteLine(_requestBody[context.TraceIdentifier]);
             }
             
             // close the stream
