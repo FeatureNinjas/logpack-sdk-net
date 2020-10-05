@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -21,9 +22,11 @@ namespace FeatureNinjas.LogPack
 
         private readonly RequestDelegate _next;
 
-        private LogPackOptions _options;
+        private readonly LogPackOptions _options;
         
         private string _requestBody;
+
+        private static List<string> _stoppedRequests = new List<string>();
 
         #endregion
 
@@ -119,7 +122,8 @@ namespace FeatureNinjas.LogPack
                         // handle error codes
                         LogPackTracer.Tracer.Trace(context.TraceIdentifier, "Called middleware returned status code 5xx");
 
-                        await CreateLogPack(context, responseBody);
+                        if (!_stoppedRequests.Contains(context.TraceIdentifier))
+                            await CreateLogPack(context, responseBody);
                     }
                     else
                     {
@@ -152,7 +156,7 @@ namespace FeatureNinjas.LogPack
                             }
                         }
 
-                        if (createLogPackAfterFilter)
+                        if (createLogPackAfterFilter && !_stoppedRequests.Contains(context.TraceIdentifier))
                             await CreateLogPack(context, responseBody);
                     }
                 }
@@ -167,6 +171,7 @@ namespace FeatureNinjas.LogPack
                 }
                 finally
                 {
+                    _stoppedRequests.Remove(context.TraceIdentifier);
                     LogPackTracer.Tracer.Remove(context.TraceIdentifier);
                 }
             }
@@ -421,6 +426,16 @@ namespace FeatureNinjas.LogPack
             var sc = context.Response == null ? 0 : context.Response.StatusCode;
             var filename = $"logpack-{time.ToString("yyyyMMdd-HHmmss")}-{sc}-{rnd}.logpack";
             return filename;
+        }
+
+        /// <summary>
+        /// When this method is called, then there will be no LogPack created for the given context,
+        /// even though the filter criteria would allow to create and upload one.
+        /// </summary>
+        /// <param name="context"></param>
+        public static void Stop(HttpContext context)
+        {
+            _stoppedRequests.Add(context.TraceIdentifier);
         }
 
         #endregion
