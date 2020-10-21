@@ -354,7 +354,12 @@ namespace FeatureNinjas.LogPack
             // get the request body
             if (_options.IncludeRequestPayload && context.Request.Body.CanRead && _requestBody.ContainsKey(context.TraceIdentifier))
             {
-                streamWriter.WriteLine(_requestBody[context.TraceIdentifier]);
+                var body = _requestBody[context.TraceIdentifier];
+                if (context.Request.ContentType.Equals("application/json"))
+                {
+                    body = JsonFormatter.FormatJson(body);
+                }
+                streamWriter.WriteLine(body);
             }
             
             // close the stream
