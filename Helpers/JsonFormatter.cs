@@ -3,11 +3,16 @@ using System.Linq;
 
 namespace FeatureNinjas.LogPack.Utilities.Helpers
 {
-    public class JsonFormatter
+    public static class JsonFormatter
     {
         private const string IndentString = "  ";
+
+        public static string FormatJson(string json)
+        {
+            return FormatJson(json, IndentString);
+        }
         
-        public static string FormatJson(string json, string indent = "  ")
+        public static string FormatJson(string json, string indent)
         {
             var indentation = 0;
             var quoteCount = 0;
