@@ -198,7 +198,7 @@ namespace FeatureNinjas.LogPack
             CreateFileForEnv(archive);
 
             // write the context
-            await CreateFileForRequest(archive, context);
+            CreateFileForRequest(archive, context);
             
             // write dependencies
             CreateFileForDependencies(archive, context);
@@ -206,7 +206,7 @@ namespace FeatureNinjas.LogPack
             // add response in case enabled by the user
             if (_options.IncludeResponse)
             {
-                await CreateFileForResponse(archive, context, responseBody);
+                CreateFileForResponse(archive, context, responseBody);
             }
 
             // add files
@@ -309,8 +309,8 @@ namespace FeatureNinjas.LogPack
             logger.Remove(context.TraceIdentifier);
 
             // close the stream
-            streamWriter.Dispose();
-            entryStream.Dispose();
+            streamWriter.Close();
+            entryStream.Close();
         }
 
         private void CreateFileForEnv(ZipArchive archive)
@@ -328,11 +328,11 @@ namespace FeatureNinjas.LogPack
             }
 
             // close the stream
-            streamWriter.Dispose();
-            entryStream.Dispose();
+            streamWriter.Close();
+            entryStream.Close();
         }
 
-        private async Task CreateFileForRequest(ZipArchive archive, HttpContext context)
+        private void CreateFileForRequest(ZipArchive archive, HttpContext context)
         {
             if (context == null)
                 return;
@@ -363,11 +363,11 @@ namespace FeatureNinjas.LogPack
             }
             
             // close the stream
-            streamWriter.Dispose();
-            entryStream.Dispose();
+            streamWriter.Close();
+            entryStream.Close();
         }
         
-        private async Task CreateFileForResponse(ZipArchive archive, HttpContext context, string responseBody)
+        private void CreateFileForResponse(ZipArchive archive, HttpContext context, string responseBody)
         {
             if (context == null)
                 return;
@@ -393,8 +393,8 @@ namespace FeatureNinjas.LogPack
             }
             
             // close the stream
-            streamWriter.Dispose();
-            entryStream.Dispose();
+            streamWriter.Close();
+            entryStream.Close();
         }
 
         private void CreateFileForDependencies(ZipArchive archive, HttpContext context)
@@ -420,8 +420,8 @@ namespace FeatureNinjas.LogPack
             }
 
             // close the stream
-            streamWriter.Dispose();
-            entryStream.Dispose();
+            streamWriter.Close();
+            entryStream.Close();
         }
 
         private string GetLogPackFilename(HttpContext context)
